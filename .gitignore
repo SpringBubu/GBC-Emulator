@@ -1,0 +1,9 @@
+/target
+
+# exclude my LEGALLY OBTAINED copies of games
+*.gbc
+
+# exclude my development environment setup (I use NixOS btw)
+.direnv
+.envrc
+flake.*
