@@ -1,7 +1,5 @@
 /target
-
-# exclude my LEGALLY OBTAINED copies of games
-*.gbc
+/roms
 
 # exclude my development environment setup (I use NixOS btw)
 .direnv
