@@ -172,9 +172,9 @@ impl Register {
     pub fn set_16_bit_register(&mut self, register: RegisterName, value: u16) {
         match register {
             AF => self.set_af(value),
-            BC => self.set_af(value),
-            DE => self.set_af(value),
-            HL => self.set_af(value),
+            BC => self.set_bc(value),
+            DE => self.set_de(value),
+            HL => self.set_hl(value),
             _ => panic!("No such 16-bit register: {}", register),
         }
     }
