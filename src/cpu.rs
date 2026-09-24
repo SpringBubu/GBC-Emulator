@@ -1,27 +1,9 @@
-enum Register8BitID {
-    A,
-    B,
-    C,
-    D,
-    E,
-    F,
-    L,
+enum RegisterName {
+
 }
 
-enum Register16BitID {
-    AF,
-    BC,
-    DE,
-    HL,
-    SP,
-    PC,
-}
+struct Flags {
 
-enum Flags {
-    Zero,
-    Subtraction,
-    HalfCarry,
-    Carry,
 }
 
 struct Register {
@@ -37,4 +19,6 @@ struct Register {
     pc: u16,
 }
 
+impl Register {
 
+}

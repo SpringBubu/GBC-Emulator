@@ -1,7 +1,2 @@
 /target
 /roms
-
-# exclude my development environment setup (I use NixOS btw)
-.direnv
-.envrc
-flake.*
