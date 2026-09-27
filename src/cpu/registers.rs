@@ -45,6 +45,7 @@ impl std::fmt::Display for RegisterName {
     }
 }
 
+// TODO: refactor Flags struct away and just use a u8
 enum FlagName {
     Z,
     N,
@@ -98,23 +99,38 @@ impl std::convert::From<u8> for Flags {
 }
 
 pub struct Register {
-    pub a: u8,
-    pub f: Flags,
-    pub b: u8,
-    pub c: u8,
-    pub d: u8,
-    pub e: u8,
-    pub h: u8,
-    pub l: u8,
-    pub sp: u16,
-    pub pc: u16,
+    a: u8,
+    pub f: Flags, // TODO: refactor flag
+    b: u8,
+    c: u8,
+    d: u8,
+    e: u8,
+    h: u8,
+    l: u8,
+    sp: u16,
+    pc: u16,
 }
 
 impl Register {
     pub fn new(flag_state: bool) -> Self {
         Self {
-            a: 0x01,
+            a: 0,
             f: Flags::new(flag_state),
+            b: 0,
+            c: 0,
+            d: 0,
+            e: 0,
+            h: 0,
+            l: 0,
+            sp: 0,
+            pc: 0,
+        }
+    }
+
+    pub fn post_boot() -> Self {
+        Self {
+            a: 0x01,
+            f: Flags::new(false),
             b: 0x00,
             c: 0x12,
             d: 0x00,
@@ -126,7 +142,56 @@ impl Register {
         }
     }
 
-    pub fn get_af(&self) -> u16 {
+    pub fn a(&self) -> u8 {
+        self.a
+    }
+    pub fn set_a(&mut self, value: u8) {
+        self.a = value;
+    }
+
+    pub fn b(&self) -> u8 {
+        self.b
+    }
+    pub fn set_b(&mut self, value: u8) {
+        self.b = value;
+    }
+
+    pub fn c(&self) -> u8 {
+        self.c
+    }
+    pub fn set_c(&mut self, value: u8) {
+        self.c = value;
+    }
+
+    pub fn d(&self) -> u8 {
+        self.d
+    }
+    pub fn set_d(&mut self, value: u8) {
+        self.d = value;
+    }
+
+    pub fn e(&self) -> u8 {
+        self.e
+    }
+    pub fn set_e(&mut self, value: u8) {
+        self.e = value;
+    }
+
+    pub fn h(&self) -> u8 {
+        self.h
+    }
+    pub fn set_h(&mut self, value: u8) {
+        self.h = value;
+    }
+
+    pub fn l(&self) -> u8 {
+        self.l
+    }
+    pub fn set_l(&mut self, value: u8) {
+        self.l = value;
+    }
+
+    pub fn af(&self) -> u16 {
         let f = u8::from(&self.f);
         (self.a as u16) << 8 | f as u16
     }
@@ -135,7 +200,7 @@ impl Register {
         self.f = Flags::from(value as u8);
     }
 
-    pub fn get_bc(&self) -> u16 {
+    pub fn bc(&self) -> u16 {
         (self.b as u16) << 8 | self.c as u16
     }
     pub fn set_bc(&mut self, value: u16) {
@@ -143,7 +208,7 @@ impl Register {
         self.c = value as u8;
     }
 
-    pub fn get_de(&self) -> u16 {
+    pub fn de(&self) -> u16 {
         (self.d as u16) << 8 | self.e as u16
     }
     pub fn set_de(&mut self, value: u16) {
@@ -151,7 +216,7 @@ impl Register {
         self.e = value as u8;
     }
 
-    pub fn get_hl(&self) -> u16 {
+    pub fn hl(&self) -> u16 {
         (self.h as u16) << 8 | self.l as u16
     }
     pub fn set_hl(&mut self, value: u16) {
@@ -160,23 +225,77 @@ impl Register {
     }
 
     // TODO: Unsure if I want to keep this structure or remove enums and just use specific get-/setters
-    pub fn get_16_bit_register(&self, register: RegisterName) -> u16 {
+    pub fn read_16_bit_reg(&self, register: RegisterName) -> u16 {
         match register {
-            AF => self.get_af(),
-            BC => self.get_bc(),
-            DE => self.get_de(),
-            HL => self.get_hl(),
+            AF => self.af(),
+            BC => self.bc(),
+            DE => self.de(),
+            HL => self.hl(),
+            SP => self.sp(),
+            PC => self.pc(),
             _ => panic!("No such 16-bit register: {}", register),
         }
     }
-    pub fn set_16_bit_register(&mut self, register: RegisterName, value: u16) {
+    pub fn write_16_bit_reg(&mut self, register: RegisterName, value: u16) {
         match register {
             AF => self.set_af(value),
             BC => self.set_bc(value),
             DE => self.set_de(value),
             HL => self.set_hl(value),
+            SP => self.set_sp(value),
+            PC => self.set_pc(value),
             _ => panic!("No such 16-bit register: {}", register),
         }
+    }
+
+    pub fn read_8_bit_reg(&self, register: RegisterName) -> u8 {
+        match register {
+            A => self.a(),
+            F => unimplemented!("Needs refactor"),
+            B => self.b(),
+            C => self.c(),
+            D => self.d(),
+            E => self.e(),
+            H => self.h(),
+            L => self.l(),
+            _ => panic!("No such 8-bit register: {}", register),
+        }
+    }
+    pub fn write_8_bit_reg(&mut self, register: RegisterName, value: u8) {
+        match register {
+            A => self.set_a(value),
+            F => unimplemented!("Needs refactor"),
+            B => self.set_b(value),
+            C => self.set_c(value),
+            D => self.set_d(value),
+            E => self.set_e(value),
+            H => self.set_h(value),
+            L => self.set_l(value),
+            _ => panic!("No such 8-bit register: {}", register),
+        }
+    }
+
+    pub fn sp(&self) -> u16 {
+        self.sp
+    }
+    pub fn set_sp(&mut self, value: u16) {
+        self.sp = value;
+    }
+    pub fn inc_sp(&mut self, value: u16) {
+        self.sp = self.sp.wrapping_add(value);
+    }
+    pub fn dec_sp(&mut self, value: u16) {
+        self.sp = self.sp.wrapping_sub(value);
+    }
+
+    pub fn pc(&self) -> u16 {
+        self.pc
+    }
+    pub fn set_pc(&mut self, value: u16) {
+        self.pc = value;
+    }
+    pub fn inc_pc(&mut self, value: u16) {
+        self.pc = self.pc.wrapping_add(value);
     }
 }
 
