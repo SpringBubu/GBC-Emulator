@@ -19,7 +19,7 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in
       {
-        devShells.default = pkgs.mkShellNoCC {
+        devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             cargo
             rustc
