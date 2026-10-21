@@ -3,5 +3,4 @@
 
 notes.md
 
-/.direnv
-flake.lock
+.direnv
