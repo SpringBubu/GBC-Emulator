@@ -19,7 +19,9 @@ impl Cpu {
     fn step(&mut self, instruction: u8) -> u8 {
         match instruction {
             0x00 => 1,
+            0x21 => load::ld_hl_d16(self),
             0x31 => load::ld_sp_d16(self),
+            0xAF => operations::xor_a(self),
             _ => panic!("Instruction not implemented: {:02X}", instruction),
         }
     }
