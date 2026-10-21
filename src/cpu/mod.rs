@@ -21,8 +21,17 @@ impl Cpu {
             0x00 => 1,
             0x21 => load::ld_hl_d16(self),
             0x31 => load::ld_sp_d16(self),
-            0xAF => operations::xor_a(self),
+            0x32 => 1, // TODO: needs memory implementation
+            0xAF => arithmetic::xor_a(self),
+            0xCB => self.prefix_step(instruction),
             _ => panic!("Instruction not implemented: {:02X}", instruction),
+        }
+    }
+
+    fn prefix_step(&mut self, instruction: u8) -> u8 {
+        match instruction {
+            0x7C => 1, // TODO
+            _ => panic!("Prefixed instruction not implemented: {:02X}", instruction),
         }
     }
 

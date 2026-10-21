@@ -1,5 +1,3 @@
-use self::RegisterName::*;
-
 pub enum RegisterName {
     // 8-bit registers
     A,
@@ -23,6 +21,7 @@ pub enum RegisterName {
 
 impl std::fmt::Display for RegisterName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use self::RegisterName::*;
         let register = match self {
             A => "A",
             F => "F",
@@ -45,8 +44,7 @@ impl std::fmt::Display for RegisterName {
     }
 }
 
-// TODO: refactor Flags struct away and just use a u8
-enum FlagName {
+pub enum FlagName {
     Z,
     N,
     H,
@@ -75,6 +73,7 @@ impl Flags {
             carry: flag_state,
         }
     }
+
 }
 
 #[rustfmt::skip]
@@ -100,7 +99,7 @@ impl std::convert::From<u8> for Flags {
 
 pub struct Register {
     a: u8,
-    pub f: Flags, // TODO: refactor flag
+    pub f: Flags,
     b: u8,
     c: u8,
     d: u8,
@@ -224,8 +223,53 @@ impl Register {
         self.l = value as u8;
     }
 
+    pub fn flags_z(&self) -> bool {
+        self.f.zero
+    }
+    pub fn flags_set_z(&mut self, state: bool) {
+        self.f.zero = state;
+    }
+
+    pub fn flags_n(&self) -> bool {
+        self.f.subtraction
+    }
+    pub fn flags_set_n(&mut self, state: bool) {
+        self.f.subtraction = state;
+    }
+
+    pub fn flags_h(&self) -> bool {
+        self.f.half_carry
+    }
+    pub fn flags_set_h(&mut self, state: bool) {
+        self.f.half_carry = state
+    }
+
+    pub fn flags_c(&self) -> bool {
+        self.f.carry
+    }
+    pub fn flags_set_c(&mut self, state: bool) {
+        self.f.carry = state;
+    }
+
+    pub fn set_exclusive_flag(&mut self, name: FlagName, state: bool) {
+        use self::FlagName::*;
+
+        self.set_flags(0);
+
+        match name {
+            Z => self.flags_set_z(state),
+            N => self.flags_set_n(state),
+            H => self.flags_set_h(state),
+            C => self.flags_set_z(state),
+        }
+    }
+    pub fn set_flags(&mut self, flags: u8) {
+        self.f = flags.into();
+    }
+
     // TODO: Unsure if I want to keep this structure or remove enums and just use specific get-/setters
     pub fn read_16_bit_reg(&self, register: RegisterName) -> u16 {
+        use self::RegisterName::*;
         match register {
             AF => self.af(),
             BC => self.bc(),
@@ -237,6 +281,7 @@ impl Register {
         }
     }
     pub fn write_16_bit_reg(&mut self, register: RegisterName, value: u16) {
+        use self::RegisterName::*;
         match register {
             AF => self.set_af(value),
             BC => self.set_bc(value),
@@ -249,9 +294,10 @@ impl Register {
     }
 
     pub fn read_8_bit_reg(&self, register: RegisterName) -> u8 {
+        use self::RegisterName::*;
         match register {
             A => self.a(),
-            F => unimplemented!("Needs refactor"),
+            F => u8::from(&self.f),
             B => self.b(),
             C => self.c(),
             D => self.d(),
@@ -262,9 +308,10 @@ impl Register {
         }
     }
     pub fn write_8_bit_reg(&mut self, register: RegisterName, value: u8) {
+        use self::RegisterName::*;
         match register {
             A => self.set_a(value),
-            F => unimplemented!("Needs refactor"),
+            F => self.f = value.into(),
             B => self.set_b(value),
             C => self.set_c(value),
             D => self.set_d(value),

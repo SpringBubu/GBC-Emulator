@@ -1,2 +1,3 @@
+pub mod arithmetic;
+pub mod bit;
 pub mod load;
-pub mod operations;
