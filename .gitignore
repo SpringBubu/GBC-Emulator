@@ -2,3 +2,6 @@
 /roms
 
 notes.md
+
+/.direnv
+flake.lock
