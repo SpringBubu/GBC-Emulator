@@ -1,11 +1,13 @@
 mod instructions;
 mod registers;
 
-use crate::cpu::{instructions::*, registers::Register};
+use crate::cpu::{instructions::*, registers::*};
+use crate::memory::Mmu;
 
 pub struct Cpu {
     registers: Register,
     dummy_memory: Vec<u8>,
+    mmu: Mmu,
 }
 
 impl Cpu {
@@ -13,24 +15,52 @@ impl Cpu {
         Self {
             registers: Register::new(false),
             dummy_memory: Vec::new(),
+            mmu: Mmu::new(),
         }
     }
 
     fn step(&mut self, instruction: u8) -> u8 {
         match instruction {
             0x00 => 1,
-            0x21 => load::ld_hl_d16(self),
-            0x31 => load::ld_sp_d16(self),
-            0x32 => 1, // TODO: needs memory implementation
+            0x01 => load::ld_rr_d16(self, RegisterName::BC),
+            0x02 => load::ld_bc_a(self),
+            0x11 => load::ld_rr_d16(self, RegisterName::DE),
+            0x20 => 0,
+            0x21 => load::ld_rr_d16(self, RegisterName::HL),
+            0x31 => load::ld_rr_d16(self, RegisterName::SP),
+            0x32 => load::ld_hl_minus_a(self),
             0xAF => arithmetic::xor_a(self),
-            0xCB => self.prefix_step(instruction),
+            0xCB => {
+                // TODO: make this more elegant
+                let pc = self.registers.pc() as usize;
+                self.registers.inc_pc(1);
+                self.prefix_step(self.dummy_memory[pc])
+            }
             _ => panic!("Instruction not implemented: {:02X}", instruction),
         }
     }
 
     fn prefix_step(&mut self, instruction: u8) -> u8 {
+        // take & check last 3 bits
+        let target = match instruction & 0x07 {
+            0 => RegisterName::B,
+            1 => RegisterName::C,
+            2 => RegisterName::D,
+            3 => RegisterName::E,
+            4 => RegisterName::H,
+            5 => RegisterName::L,
+            6 => RegisterName::HL, // TODO: think about how to do this properly for HL since it's a little different
+            7 => RegisterName::A,
+            _ => panic!("Invalid target"),
+        };
+
         match instruction {
-            0x7C => 1, // TODO
+            0xC0..=0xC7 => {
+                let bit_pos = ((instruction & 0x30) >> 3) + ((instruction & 0x08) >> 3); // evil bit pattern level hacking
+                print!("\n\n{}\n\n", bit_pos); // to check if it actually works correctly lol
+
+                bit::set_p_r(self, bit_pos, target)
+            }
             _ => panic!("Prefixed instruction not implemented: {:02X}", instruction),
         }
     }

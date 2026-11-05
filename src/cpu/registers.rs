@@ -1,3 +1,4 @@
+#[derive(Clone, Copy)]
 pub enum RegisterName {
     // 8-bit registers
     A,
