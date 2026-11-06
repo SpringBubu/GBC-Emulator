@@ -8,6 +8,14 @@ pub fn ld_rr_d16(cpu: &mut Cpu, register: RegisterName) -> u8 {
     12
 }
 
+pub fn ld_rr_mem_a(cpu: &mut Cpu, register: RegisterName) -> u8 {
+    let value = cpu.registers.a();
+    let address = cpu.registers.read_16_bit_reg(register);
+    cpu.mmu.write(address, value);
+
+    8
+}
+
 pub fn ld_hl_minus_a(cpu: &mut Cpu) -> u8 {
     let value = cpu.registers.a();
     let address = cpu.registers.hl();

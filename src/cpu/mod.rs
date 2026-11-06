@@ -54,12 +54,29 @@ impl Cpu {
             _ => panic!("Invalid target"),
         };
 
-        match instruction {
-            0xC0..=0xC7 => {
-                let bit_pos = ((instruction & 0x30) >> 3) + ((instruction & 0x08) >> 3); // evil bit pattern level hacking
-                print!("\n\n{}\n\n", bit_pos); // to check if it actually works correctly lol
+        let bit_pos = (instruction & 0x38) >> 3; // evil bit pattern level hacking
 
-                bit::set_p_r(self, bit_pos, target)
+        match instruction {
+            0x40..=0x7F => {
+                if target == RegisterName::HL {
+                    bit::bit_p_hl(self, bit_pos)
+                } else {
+                    bit::bit_p_r(self, bit_pos, target)
+                }
+            }
+            0x80..=0xBF => {
+                if target == RegisterName::HL {
+                    bit::res_p_hl(self, bit_pos)
+                } else {
+                    bit::res_p_r(self, bit_pos, target)
+                }
+            }
+            0xC0..=0xFF => {
+                if target == RegisterName::HL {
+                    bit::set_p_hl(self, bit_pos)
+                } else {
+                    bit::set_p_r(self, bit_pos, target)
+                }
             }
             _ => panic!("Prefixed instruction not implemented: {:02X}", instruction),
         }
@@ -79,6 +96,7 @@ impl Cpu {
         let pc = self.registers.pc() as usize;
         let low_byte = self.dummy_memory[pc] as u16;
         let high_byte = self.dummy_memory[pc + 1] as u16;
+
         high_byte << 8 | low_byte
     }
 }
