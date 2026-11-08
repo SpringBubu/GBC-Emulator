@@ -74,7 +74,6 @@ impl Flags {
             carry: flag_state,
         }
     }
-
 }
 
 #[rustfmt::skip]
@@ -268,7 +267,6 @@ impl Register {
         self.f = flags.into();
     }
 
-    // TODO: Unsure if I want to keep this structure or remove enums and just use specific get-/setters
     pub fn read_16_bit_reg(&self, register: RegisterName) -> u16 {
         use self::RegisterName::*;
         match register {

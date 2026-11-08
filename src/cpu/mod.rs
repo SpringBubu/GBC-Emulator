@@ -20,15 +20,33 @@ impl Cpu {
     }
 
     fn step(&mut self, instruction: u8) -> u8 {
+        let src_reg = Self::map_b3_to_r8(instruction & 0x07);
+        let dest_reg = Self::map_b3_to_r8((instruction & 0x38) >> 3);
+
         match instruction {
             0x00 => 1,
             0x01 => load::ld_rr_d16(self, RegisterName::BC),
-            0x02 => load::ld_bc_a(self),
+            0x02 => load::ld_rr_mem_r(self, RegisterName::BC, RegisterName::A),
+            0x0A => load::ld_r_rr_mem(self, RegisterName::A, RegisterName::BC),
             0x11 => load::ld_rr_d16(self, RegisterName::DE),
-            0x20 => 0,
+            0x12 => load::ld_rr_mem_r(self, RegisterName::DE, RegisterName::A),
+            0x1A => load::ld_r_rr_mem(self, RegisterName::A, RegisterName::DE),
+            0x20 => control::jr_cond_r8(self, control::JumpCondition::NZ),
             0x21 => load::ld_rr_d16(self, RegisterName::HL),
+            0x22 => load::ld_hl_mem_plus_a(self),
             0x31 => load::ld_rr_d16(self, RegisterName::SP),
-            0x32 => load::ld_hl_minus_a(self),
+            0x32 => load::ld_hl_mem_minus_a(self),
+            0x40..=0x7F => {
+                if src_reg == RegisterName::HL {
+                    load::ld_r_rr_mem(self, dest_reg, src_reg)
+                } else if dest_reg == RegisterName::HL {
+                    load::ld_rr_mem_r(self, dest_reg, src_reg)
+                } else if (src_reg == RegisterName::HL) && (dest_reg == RegisterName::HL) {
+                    0 // TODO: 0x76 - halt
+                } else {
+                    load::ld_r_r(self, dest_reg, src_reg)
+                }
+            }
             0xAF => arithmetic::xor_a(self),
             0xCB => {
                 // TODO: make this more elegant
@@ -36,23 +54,14 @@ impl Cpu {
                 self.registers.inc_pc(1);
                 self.prefix_step(self.dummy_memory[pc])
             }
+            0xFB => 0, // TODO: learn how interrupts work & implemented accordingly
             _ => panic!("Instruction not implemented: {:02X}", instruction),
         }
     }
 
     fn prefix_step(&mut self, instruction: u8) -> u8 {
         // take & check last 3 bits
-        let target = match instruction & 0x07 {
-            0 => RegisterName::B,
-            1 => RegisterName::C,
-            2 => RegisterName::D,
-            3 => RegisterName::E,
-            4 => RegisterName::H,
-            5 => RegisterName::L,
-            6 => RegisterName::HL, // TODO: think about how to do this properly for HL since it's a little different
-            7 => RegisterName::A,
-            _ => panic!("Invalid target"),
-        };
+        let target = Self::map_b3_to_r8(instruction & 0x07);
 
         let bit_pos = (instruction & 0x38) >> 3; // evil bit pattern level hacking
 
@@ -92,11 +101,26 @@ impl Cpu {
         }
     }
 
+    // TODO: switch dummy_memory to mmu once implemented
     fn fetch_little_endian(&self) -> u16 {
         let pc = self.registers.pc() as usize;
         let low_byte = self.dummy_memory[pc] as u16;
         let high_byte = self.dummy_memory[pc + 1] as u16;
 
         high_byte << 8 | low_byte
+    }
+
+    fn map_b3_to_r8(masked_instr: u8) -> RegisterName {
+        match masked_instr {
+            0 => RegisterName::B,
+            1 => RegisterName::C,
+            2 => RegisterName::D,
+            3 => RegisterName::E,
+            4 => RegisterName::H,
+            5 => RegisterName::L,
+            6 => RegisterName::HL,
+            7 => RegisterName::A,
+            _ => panic!("Invalid target"),
+        }
     }
 }

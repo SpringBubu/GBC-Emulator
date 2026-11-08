@@ -4,7 +4,7 @@ use crate::cpu::{
 };
 
 pub fn bit_p_r(cpu: &mut Cpu, position: u8, register: RegisterName) -> u8 {
-    let reg = cpu.registers.h();
+    let reg = cpu.registers.read_8_bit_reg(register);
     let mask = 1 << position;
     let value = reg & mask;
     let compliment = value == 0;
