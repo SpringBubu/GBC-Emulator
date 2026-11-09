@@ -51,6 +51,8 @@ impl Cpu {
             0x90..=0x97 => arithmetic::sub_a_r(self, src_reg),
             0xA0..=0xA7 => arithmetic::and_a_r(self, src_reg),
             0xA8..=0xAF => arithmetic::xor_a_r(self, src_reg),
+            0xB0..=0xB7 => arithmetic::or_a_r(self, src_reg),
+            0xB8..=0xBF => arithmetic::cp_a_r(self, src_reg),
             0xCB => {
                 // TODO: make this more elegant
                 let pc = self.registers.pc() as usize;
