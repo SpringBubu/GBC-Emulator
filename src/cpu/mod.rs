@@ -47,27 +47,10 @@ impl Cpu {
                     load::ld_r_r(self, dest_reg, src_reg)
                 }
             }
-            0x80..=0x87 => {
-                if src_reg == RegisterName::HL {
-                    arithmetic::add_a_hl(self)
-                } else {
-                    arithmetic::add_a_r(self, src_reg)
-                }
-            }
-            0x90..=0x97 => {
-                if src_reg == RegisterName::HL {
-                    arithmetic::sub_a_hl(self)
-                } else {
-                    arithmetic::sub_a_r(self, src_reg)
-                }
-            }
-            0xA8..=0xAF => {
-                if src_reg == RegisterName::HL {
-                    arithmetic::xor_a_hl(self)
-                } else {
-                    arithmetic::xor_a_r(self, src_reg)
-                }
-            }
+            0x80..=0x87 => arithmetic::add_a_r(self, src_reg),
+            0x90..=0x97 => arithmetic::sub_a_r(self, src_reg),
+            0xA0..=0xA7 => arithmetic::and_a_r(self, src_reg),
+            0xA8..=0xAF => arithmetic::xor_a_r(self, src_reg),
             0xCB => {
                 // TODO: make this more elegant
                 let pc = self.registers.pc() as usize;
@@ -86,27 +69,9 @@ impl Cpu {
         let bit_pos = (instruction & 0x38) >> 3; // evil bit pattern level hacking
 
         match instruction {
-            0x40..=0x7F => {
-                if target == RegisterName::HL {
-                    bit::bit_p_hl(self, bit_pos)
-                } else {
-                    bit::bit_p_r(self, bit_pos, target)
-                }
-            }
-            0x80..=0xBF => {
-                if target == RegisterName::HL {
-                    bit::res_p_hl(self, bit_pos)
-                } else {
-                    bit::res_p_r(self, bit_pos, target)
-                }
-            }
-            0xC0..=0xFF => {
-                if target == RegisterName::HL {
-                    bit::set_p_hl(self, bit_pos)
-                } else {
-                    bit::set_p_r(self, bit_pos, target)
-                }
-            }
+            0x40..=0x7F => bit::bit_p_r(self, bit_pos, target),
+            0x80..=0xBF => bit::res_p_r(self, bit_pos, target),
+            0xC0..=0xFF => bit::set_p_r(self, bit_pos, target),
             _ => panic!("Prefixed instruction not implemented: {:02X}", instruction),
         }
     }
