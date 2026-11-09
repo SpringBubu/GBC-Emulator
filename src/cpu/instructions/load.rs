@@ -16,7 +16,7 @@ pub fn ld_rr_mem_r(cpu: &mut Cpu, destination: RegisterName, source: RegisterNam
     8
 }
 
-pub fn ld_hl_mem_minus_a(cpu: &mut Cpu) -> u8 {
+pub fn ld_hl_minus_a(cpu: &mut Cpu) -> u8 {
     let address = cpu.registers.hl();
     let value = cpu.registers.a();
     cpu.mmu.write(address, value);
@@ -26,7 +26,7 @@ pub fn ld_hl_mem_minus_a(cpu: &mut Cpu) -> u8 {
 
     8
 }
-pub fn ld_hl_mem_plus_a(cpu: &mut Cpu) -> u8 {
+pub fn ld_hl_plus_a(cpu: &mut Cpu) -> u8 {
     let address = cpu.registers.hl();
     let value = cpu.registers.a();
     cpu.mmu.write(address, value);

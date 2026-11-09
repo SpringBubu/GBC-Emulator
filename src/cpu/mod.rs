@@ -33,9 +33,9 @@ impl Cpu {
             0x1A => load::ld_r_rr_mem(self, RegisterName::A, RegisterName::DE),
             0x20 => control::jr_cond_r8(self, control::JumpCondition::NZ),
             0x21 => load::ld_rr_d16(self, RegisterName::HL),
-            0x22 => load::ld_hl_mem_plus_a(self),
+            0x22 => load::ld_hl_plus_a(self),
             0x31 => load::ld_rr_d16(self, RegisterName::SP),
-            0x32 => load::ld_hl_mem_minus_a(self),
+            0x32 => load::ld_hl_minus_a(self),
             0x40..=0x7F => {
                 if src_reg == RegisterName::HL {
                     load::ld_r_rr_mem(self, dest_reg, src_reg)
@@ -47,7 +47,27 @@ impl Cpu {
                     load::ld_r_r(self, dest_reg, src_reg)
                 }
             }
-            0xAF => arithmetic::xor_a(self),
+            0x80..=0x87 => {
+                if src_reg == RegisterName::HL {
+                    arithmetic::add_a_hl(self)
+                } else {
+                    arithmetic::add_a_r(self, src_reg)
+                }
+            }
+            0x90..=0x97 => {
+                if src_reg == RegisterName::HL {
+                    arithmetic::sub_a_hl(self)
+                } else {
+                    arithmetic::sub_a_r(self, src_reg)
+                }
+            }
+            0xA8..=0xAF => {
+                if src_reg == RegisterName::HL {
+                    arithmetic::xor_a_hl(self)
+                } else {
+                    arithmetic::xor_a_r(self, src_reg)
+                }
+            }
             0xCB => {
                 // TODO: make this more elegant
                 let pc = self.registers.pc() as usize;
