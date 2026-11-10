@@ -16,22 +16,17 @@ pub fn ld_rr_mem_r(cpu: &mut Cpu, destination: RegisterName, source: RegisterNam
     8
 }
 
-pub fn ld_hl_minus_a(cpu: &mut Cpu) -> u8 {
+pub fn ld_hl_mem_a(cpu: &mut Cpu, plus: bool) -> u8 {
     let address = cpu.registers.hl();
     let value = cpu.registers.a();
     cpu.mmu.write(address, value);
 
-    let new_hl = address.wrapping_sub(1);
-    cpu.registers.write_16_bit_reg(RegisterName::HL, new_hl);
+    let new_hl = if plus {
+        address.wrapping_add(1)
+    } else {
+        address.wrapping_sub(1)
+    };
 
-    8
-}
-pub fn ld_hl_plus_a(cpu: &mut Cpu) -> u8 {
-    let address = cpu.registers.hl();
-    let value = cpu.registers.a();
-    cpu.mmu.write(address, value);
-
-    let new_hl = address.wrapping_add(1);
     cpu.registers.write_16_bit_reg(RegisterName::HL, new_hl);
 
     8
