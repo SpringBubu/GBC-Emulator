@@ -27,15 +27,42 @@ impl Cpu {
             0x00 => 1,
             0x01 => load::ld_rr_d16(self, RegisterName::BC),
             0x02 => load::ld_rr_mem_r(self, RegisterName::BC, RegisterName::A),
+            0x03 => arithmetic::inc_rr(self, RegisterName::BC),
+            0x04 => arithmetic::inc_r(self, RegisterName::B),
+            0x05 => arithmetic::dec_r(self, RegisterName::B),
+            0x0B => arithmetic::inc_rr(self, RegisterName::BC),
             0x0A => load::ld_r_rr_mem(self, RegisterName::A, RegisterName::BC),
+            0x0C => arithmetic::inc_r(self, RegisterName::C),
+            0x0D => arithmetic::dec_r(self, RegisterName::C),
             0x11 => load::ld_rr_d16(self, RegisterName::DE),
             0x12 => load::ld_rr_mem_r(self, RegisterName::DE, RegisterName::A),
+            0x13 => arithmetic::inc_rr(self, RegisterName::DE),
+            0x14 => arithmetic::inc_r(self, RegisterName::D),
+            0x15 => arithmetic::dec_r(self, RegisterName::D),
             0x1A => load::ld_r_rr_mem(self, RegisterName::A, RegisterName::DE),
+            0x1B => arithmetic::inc_rr(self, RegisterName::DE),
+            0x1C => arithmetic::inc_r(self, RegisterName::E),
+            0x1D => arithmetic::dec_r(self, RegisterName::E),
             0x20 => control::jr_cond_r8(self, control::JumpCondition::NZ),
             0x21 => load::ld_rr_d16(self, RegisterName::HL),
             0x22 => load::ld_hl_mem_a(self, true),
+            0x23 => arithmetic::inc_rr(self, RegisterName::HL),
+            0x24 => arithmetic::inc_r(self, RegisterName::H),
+            0x25 => arithmetic::dec_r(self, RegisterName::H),
+            0x2B => arithmetic::inc_rr(self, RegisterName::HL),
+            0x2C => arithmetic::inc_r(self, RegisterName::L),
+            0x2D => arithmetic::dec_r(self, RegisterName::L),
+            0x2F => arithmetic::cpl(self),
             0x31 => load::ld_rr_d16(self, RegisterName::SP),
             0x32 => load::ld_hl_mem_a(self, false),
+            0x33 => arithmetic::inc_rr(self, RegisterName::SP),
+            0x34 => arithmetic::inc_r(self, RegisterName::HL),
+            0x35 => arithmetic::dec_r(self, RegisterName::HL),
+            0x37 => arithmetic::scf(self),
+            0x3B => arithmetic::inc_rr(self, RegisterName::SP),
+            0x3C => arithmetic::inc_r(self, RegisterName::A),
+            0x3D => arithmetic::dec_r(self, RegisterName::A),
+            0x3F => arithmetic::ccf(self),
             0x40..=0x7F => {
                 if src_reg == RegisterName::HL {
                     load::ld_r_rr_mem(self, dest_reg, src_reg)
@@ -65,10 +92,9 @@ impl Cpu {
     }
 
     fn prefix_step(&mut self, instruction: u8) -> u8 {
-        // take & check last 3 bits
+        // evil bit pattern level hacking
         let target = Self::map_b3_to_r8(instruction & 0x07);
-
-        let bit_pos = (instruction & 0x38) >> 3; // evil bit pattern level hacking
+        let bit_pos = (instruction & 0x38) >> 3;
 
         match instruction {
             0x40..=0x7F => bit::bit_p_r(self, bit_pos, target),
