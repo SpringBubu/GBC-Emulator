@@ -3,17 +3,7 @@ use crate::cpu::{
     registers::{FlagName, RegisterName},
 };
 
-fn get_operands(cpu: &mut Cpu, register: RegisterName) -> (u8, u8) {
-    let lhs = cpu.registers.a();
-    let rhs = match register {
-        RegisterName::HL => cpu.mmu.read(cpu.registers.hl()),
-        _ => cpu.registers.read_8_bit_reg(register),
-    };
-
-    (lhs, rhs)
-}
-
-pub fn inc_rr(cpu: &mut Cpu, register: RegisterName) -> u8 {
+pub fn inc_r16(cpu: &mut Cpu, register: RegisterName) -> u8 {
     let reg = cpu.registers.read_16_bit_reg(register);
     let value = reg.wrapping_add(1);
 
@@ -22,8 +12,8 @@ pub fn inc_rr(cpu: &mut Cpu, register: RegisterName) -> u8 {
     8
 }
 
-pub fn inc_r(cpu: &mut Cpu, register: RegisterName) -> u8 {
-    let (_, value) = get_operands(cpu, register);
+pub fn inc_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
+    let value = cpu.r8_value(register);
     let inc_val = value.wrapping_add(1);
     let half_carry = ((value & 0x0F) + 1) > 0x0F;
 
@@ -31,20 +21,12 @@ pub fn inc_r(cpu: &mut Cpu, register: RegisterName) -> u8 {
     cpu.registers.flags_set_z(false);
     cpu.registers.flags_set_z(half_carry);
 
-    if register == RegisterName::HL {
-        let address = cpu.registers.hl();
+    cpu.set_r8_value(register, value);
 
-        cpu.mmu.write(address, inc_val);
-
-        12
-    } else {
-        cpu.registers.write_8_bit_reg(register, inc_val);
-
-        4
-    }
+    if register == RegisterName::HL { 12 } else { 4 }
 }
 
-pub fn dec_rr(cpu: &mut Cpu, register: RegisterName) -> u8 {
+pub fn dec_r16(cpu: &mut Cpu, register: RegisterName) -> u8 {
     let reg = cpu.registers.read_16_bit_reg(register);
     let value = reg.wrapping_sub(reg);
 
@@ -53,8 +35,8 @@ pub fn dec_rr(cpu: &mut Cpu, register: RegisterName) -> u8 {
     8
 }
 
-pub fn dec_r(cpu: &mut Cpu, register: RegisterName) -> u8 {
-    let (_, value) = get_operands(cpu, register);
+pub fn dec_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
+    let value = cpu.r8_value(register);
     let inc_val = value.wrapping_sub(1);
     let half_carry = (value & 0x0F) < 1;
 
@@ -62,17 +44,7 @@ pub fn dec_r(cpu: &mut Cpu, register: RegisterName) -> u8 {
     cpu.registers.flags_set_z(true);
     cpu.registers.flags_set_z(half_carry);
 
-    if register == RegisterName::HL {
-        let address = cpu.registers.hl();
-
-        cpu.mmu.write(address, inc_val);
-
-        12
-    } else {
-        cpu.registers.write_8_bit_reg(register, inc_val);
-
-        4
-    }
+    if register == RegisterName::HL { 12 } else { 4 }
 }
 
 pub fn cpl(cpu: &mut Cpu) -> u8 {
@@ -104,8 +76,9 @@ pub fn ccf(cpu: &mut Cpu) -> u8 {
     4
 }
 
-pub fn add_a_r(cpu: &mut Cpu, register: RegisterName) -> u8 {
-    let (a, addend) = get_operands(cpu, register);
+pub fn add_a_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
+    let a = cpu.registers.a();
+    let addend = cpu.r8_value(register);
     let (value, carry) = a.overflowing_add(addend);
     let half_carry = ((a & 0x0F) + (addend & 0x0F)) > 0x0F;
 
@@ -119,8 +92,9 @@ pub fn add_a_r(cpu: &mut Cpu, register: RegisterName) -> u8 {
     if register == RegisterName::HL { 8 } else { 4 }
 }
 
-pub fn adc_a_r(cpu: &mut Cpu, register: RegisterName) -> u8 {
-    let (a, addend_reg) = get_operands(cpu, register);
+pub fn adc_a_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
+    let a = cpu.registers.a();
+    let addend_reg = cpu.r8_value(register);
     let addend_carry = cpu.registers.flags_c() as u8;
     let (addend, carry_1) = addend_reg.overflowing_add(addend_carry);
     let (value, carry_2) = a.overflowing_add(addend);
@@ -136,8 +110,9 @@ pub fn adc_a_r(cpu: &mut Cpu, register: RegisterName) -> u8 {
     if register == RegisterName::HL { 8 } else { 4 }
 }
 
-pub fn sub_a_r(cpu: &mut Cpu, register: RegisterName) -> u8 {
-    let (a, subtrahend) = get_operands(cpu, register);
+pub fn sub_a_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
+    let a = cpu.registers.a();
+    let subtrahend = cpu.r8_value(register);
     let (value, carry) = a.overflowing_sub(subtrahend);
     let half_carry = (a & 0x0F) < (subtrahend & 0x0F);
 
@@ -151,8 +126,9 @@ pub fn sub_a_r(cpu: &mut Cpu, register: RegisterName) -> u8 {
     if register == RegisterName::HL { 8 } else { 4 }
 }
 
-pub fn sbc_a_r(cpu: &mut Cpu, register: RegisterName) -> u8 {
-    let (a, subtrahend_reg) = get_operands(cpu, register);
+pub fn sbc_a_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
+    let a = cpu.registers.a();
+    let subtrahend_reg = cpu.r8_value(register);
     let subtrahend_carry = cpu.registers.flags_c() as u8;
     let (subtrahend, carry_1) = subtrahend_reg.overflowing_sub(subtrahend_carry);
     let (value, carry_2) = a.overflowing_sub(subtrahend);
@@ -168,8 +144,9 @@ pub fn sbc_a_r(cpu: &mut Cpu, register: RegisterName) -> u8 {
     if register == RegisterName::HL { 8 } else { 4 }
 }
 
-pub fn and_a_r(cpu: &mut Cpu, register: RegisterName) -> u8 {
-    let (a, operand) = get_operands(cpu, register);
+pub fn and_a_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
+    let a = cpu.registers.a();
+    let operand = cpu.r8_value(register);
     let value = a & operand;
 
     cpu.registers.set_a(value);
@@ -182,13 +159,9 @@ pub fn and_a_r(cpu: &mut Cpu, register: RegisterName) -> u8 {
     if register == RegisterName::HL { 8 } else { 4 }
 }
 
-pub fn xor_a_r(cpu: &mut Cpu, register: RegisterName) -> u8 {
+pub fn xor_a_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
     let a = cpu.registers.a();
-    let operand = match register {
-        RegisterName::HL => cpu.mmu.read(cpu.registers.hl()),
-        _ => cpu.registers.read_8_bit_reg(register),
-    };
-
+    let operand = cpu.r8_value(register);
     let value = a ^ operand;
 
     cpu.registers.set_a(value);
@@ -198,8 +171,9 @@ pub fn xor_a_r(cpu: &mut Cpu, register: RegisterName) -> u8 {
     if register == RegisterName::HL { 8 } else { 4 }
 }
 
-pub fn or_a_r(cpu: &mut Cpu, register: RegisterName) -> u8 {
-    let (a, operand) = get_operands(cpu, register);
+pub fn or_a_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
+    let a = cpu.registers.a();
+    let operand = cpu.r8_value(register);
     let value = a | operand;
 
     cpu.registers.set_a(value);
@@ -209,8 +183,9 @@ pub fn or_a_r(cpu: &mut Cpu, register: RegisterName) -> u8 {
     if register == RegisterName::HL { 8 } else { 4 }
 }
 
-pub fn cp_a_r(cpu: &mut Cpu, register: RegisterName) -> u8 {
-    let (a, operand) = get_operands(cpu, register);
+pub fn cp_a_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
+    let a = cpu.registers.a();
+    let operand = cpu.r8_value(register);
     let (value, carry) = a.overflowing_sub(operand);
     let half_carry = (a & 0x0F) < (operand & 0x0F);
 
