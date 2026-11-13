@@ -29,6 +29,7 @@ pub fn res_p_r(cpu: &mut Cpu, position: u8, register: RegisterName) -> u8 {
     };
     let mask = !(1 << position);
     let value = reg & mask;
+
     cpu.registers.write_8_bit_reg(register, value);
 
     if register == RegisterName::HL { 16 } else { 8 }
@@ -41,6 +42,7 @@ pub fn set_p_r(cpu: &mut Cpu, position: u8, register: RegisterName) -> u8 {
     };
     let mask = 1 << position;
     let value = reg | mask;
+
     cpu.registers.write_8_bit_reg(register, value);
 
     if register == RegisterName::HL { 16 } else { 8 }
