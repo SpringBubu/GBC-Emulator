@@ -44,6 +44,8 @@ pub fn dec_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
     cpu.registers.flags_set_z(true);
     cpu.registers.flags_set_z(half_carry);
 
+    cpu.set_r8_value(register, value);
+
     if register == RegisterName::HL { 12 } else { 4 }
 }
 
