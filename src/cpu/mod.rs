@@ -20,96 +20,64 @@ impl Cpu {
     }
 
     fn step(&mut self, instruction: u8) -> u8 {
-        let src_reg = Self::map_b3_to_r8(instruction & 0x07);
-        let dest_reg = Self::map_b3_to_r8((instruction & 0x38) >> 3);
+        let src_r8 = Self::map_b3_to_r8(instruction & 0x07);
 
-        // TODO: fold the vertical groups of 4
+        // TODO: those two bits can be interpreted in 3 ways depending on operation, find elegant way to map
+        // Maybe give op functions the bits and let them interpret themselves?
+        let target_r16 = RegisterName::AF; // = Self::map_b2_to_r16((instruction & 0x30) >> 4);
+
         match instruction {
-            // 0x00..=0x3F => {}
             0x00 => 1,
-            0x01 => load::ld_r16_d16(self, RegisterName::BC),
-            0x02 => load::ld_r16_mem_r8(self, RegisterName::BC, RegisterName::A),
-            0x03 => arithmetic::inc_r16(self, RegisterName::BC),
-            0x04 => arithmetic::inc_r8(self, RegisterName::B),
-            0x05 => arithmetic::dec_r8(self, RegisterName::B),
+            0x01 | 0x11 | 0x21 | 0x31 => load::ld_r16_d16(self, target_r16),
+            0x02 | 0x12 => load::ld_r16_mem_r8(self, target_r16, RegisterName::A),
+            0x03 | 0x13 | 0x23 | 0x33 => arithmetic::inc_r16(self, target_r16),
+            0x04 | 0x14 | 0x24 | 0x34 | 0x0C | 0x1C | 0x2C | 0x3C => arithmetic::inc_r8(self, src_r8),
+            0x05 | 0x15 | 0x25 | 0x35 | 0x0D | 0x1D | 0x2D | 0x3D => arithmetic::dec_r8(self, src_r8),
             0x07 => bit::rlca(self),
-            0x09 => arithmetic::add_hl_r16(self, RegisterName::BC),
-            0x0A => load::ld_r8_r16_mem(self, RegisterName::A, RegisterName::BC),
-            0x0B => arithmetic::dec_r16(self, RegisterName::BC),
-            0x0C => arithmetic::inc_r8(self, RegisterName::C),
-            0x0D => arithmetic::dec_r8(self, RegisterName::C),
+            0x09 | 0x19 | 0x29 | 0x39 => arithmetic::add_hl_r16(self, target_r16),
+            0x0A | 0x1A => load::ld_r8_r16_mem(self, RegisterName::A, target_r16),
+            0x0B | 0x1B | 0x2B | 0x3B => arithmetic::dec_r16(self, target_r16),
             0x0F => bit::rrca(self),
-            0x11 => load::ld_r16_d16(self, RegisterName::DE),
-            0x12 => load::ld_r16_mem_r8(self, RegisterName::DE, RegisterName::A),
-            0x13 => arithmetic::inc_r16(self, RegisterName::DE),
-            0x14 => arithmetic::inc_r8(self, RegisterName::D),
-            0x15 => arithmetic::dec_r8(self, RegisterName::D),
             0x17 => bit::rla(self),
-            0x19 => arithmetic::add_hl_r16(self, RegisterName::DE),
-            0x1A => load::ld_r8_r16_mem(self, RegisterName::A, RegisterName::DE),
-            0x1B => arithmetic::dec_r16(self, RegisterName::DE),
-            0x1C => arithmetic::inc_r8(self, RegisterName::E),
-            0x1D => arithmetic::dec_r8(self, RegisterName::E),
             0x1F => bit::rra(self),
             0x20 => control::jr_cond_r8(self, control::JumpCondition::NZ),
-            0x21 => load::ld_r16_d16(self, RegisterName::HL),
             0x22 => load::ld_hl_pm_mem_a(self, true),
-            0x23 => arithmetic::inc_r16(self, RegisterName::HL),
-            0x24 => arithmetic::inc_r8(self, RegisterName::H),
-            0x25 => arithmetic::dec_r8(self, RegisterName::H),
-            0x29 => arithmetic::add_hl_r16(self, RegisterName::HL),
             0x2A => load::ld_a_hl_pm_mem(self, true),
-            0x2B => arithmetic::dec_r16(self, RegisterName::HL),
-            0x2C => arithmetic::inc_r8(self, RegisterName::L),
-            0x2D => arithmetic::dec_r8(self, RegisterName::L),
             0x2F => arithmetic::cpl(self),
-            0x31 => load::ld_r16_d16(self, RegisterName::SP),
             0x32 => load::ld_hl_pm_mem_a(self, false),
-            0x33 => arithmetic::inc_r16(self, RegisterName::SP),
-            0x34 => arithmetic::inc_r8(self, RegisterName::HL),
-            0x35 => arithmetic::dec_r8(self, RegisterName::HL),
             0x37 => arithmetic::scf(self),
-            0x39 => arithmetic::add_hl_r16(self, RegisterName::SP),
             0x3A => load::ld_a_hl_pm_mem(self, false),
-            0x3B => arithmetic::dec_r16(self, RegisterName::SP),
-            0x3C => arithmetic::inc_r8(self, RegisterName::A),
-            0x3D => arithmetic::dec_r8(self, RegisterName::A),
             0x3F => arithmetic::ccf(self),
             0x40..=0x7F => {
-                if src_reg == RegisterName::HL {
-                    load::ld_r8_r16_mem(self, dest_reg, src_reg)
-                } else if dest_reg == RegisterName::HL {
+                let dest_r8 = Self::map_b3_to_r8((instruction & 0x38) >> 3);
+
+                if src_r8 == RegisterName::HL {
+                    load::ld_r8_r16_mem(self, dest_r8, src_r8)
+                } else if dest_r8 == RegisterName::HL {
                     // kinda a misnomer, since we don't use hl+/- (r16) as an address, but hl (r8)
-                    load::ld_r16_mem_r8(self, dest_reg, src_reg)
-                } else if (src_reg == RegisterName::HL) && (dest_reg == RegisterName::HL) {
+                    load::ld_r16_mem_r8(self, dest_r8, src_r8)
+                } else if (src_r8 == RegisterName::HL) && (dest_r8 == RegisterName::HL) {
                     0 // TODO: 0x76 - halt
                 } else {
-                    load::ld_r8_r8(self, dest_reg, src_reg)
+                    load::ld_r8_r8(self, dest_r8, src_r8)
                 }
             }
-            0x80..=0x87 => arithmetic::add_a_r8(self, src_reg),
-            0x88..=0x8F => arithmetic::adc_a_r8(self, src_reg),
-            0x90..=0x97 => arithmetic::sub_a_r8(self, src_reg),
-            0x98..=0x9F => arithmetic::sbc_a_r8(self, src_reg),
-            0xA0..=0xA7 => arithmetic::and_a_r8(self, src_reg),
-            0xA8..=0xAF => arithmetic::xor_a_r8(self, src_reg),
-            0xB0..=0xB7 => arithmetic::or_a_r8(self, src_reg),
-            0xB8..=0xBF => arithmetic::cp_a_r8(self, src_reg),
-            // 0xC0..=0xFF => {}
-            0xC1 => stack::pop_r16(self, RegisterName::BC),
-            0xC5 => stack::push_r16(self, RegisterName::BC),
+            0x80..=0x87 => arithmetic::add_a_r8(self, src_r8),
+            0x88..=0x8F => arithmetic::adc_a_r8(self, src_r8),
+            0x90..=0x97 => arithmetic::sub_a_r8(self, src_r8),
+            0x98..=0x9F => arithmetic::sbc_a_r8(self, src_r8),
+            0xA0..=0xA7 => arithmetic::and_a_r8(self, src_r8),
+            0xA8..=0xAF => arithmetic::xor_a_r8(self, src_r8),
+            0xB0..=0xB7 => arithmetic::or_a_r8(self, src_r8),
+            0xB8..=0xBF => arithmetic::cp_a_r8(self, src_r8),
+            0xC1 | 0xD1 | 0xE1 | 0xF1 => stack::pop_r16(self, target_r16),
+            0xC5 | 0xD5 | 0xE5 | 0xF5 => stack::push_r16(self, target_r16),
             0xCB => {
                 // TODO: make this more elegant
                 let pc = self.registers.pc() as usize;
                 self.registers.inc_pc(1);
                 self.prefix_step(self.dummy_memory[pc])
             }
-            0xD1 => stack::pop_r16(self, RegisterName::DE),
-            0xD5 => stack::push_r16(self, RegisterName::DE),
-            0xE1 => stack::pop_r16(self, RegisterName::HL),
-            0xE5 => stack::push_r16(self, RegisterName::HL),
-            0xF1 => stack::pop_r16(self, RegisterName::AF),
-            0xF5 => stack::push_r16(self, RegisterName::AF),
             0xFB => 0, // TODO: learn how interrupts work & implemented accordingly
             _ => panic!("Instruction not implemented: {:02X}", instruction),
         }
