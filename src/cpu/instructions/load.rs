@@ -1,9 +1,10 @@
 use crate::cpu::{Cpu, registers::RegisterName};
 
 pub fn ld_r16_d16(cpu: &mut Cpu, register: RegisterName) -> u8 {
-    let value = cpu.fetch_little_endian();
-
+    let address = cpu.registers.pc();
+    let value = cpu.fetch_little_endian_d16(address);
     cpu.registers.inc_pc(2);
+
     cpu.registers.write_16_bit_reg(register, value);
 
     12
@@ -35,12 +36,28 @@ pub fn ld_hl_pm_mem_a(cpu: &mut Cpu, plus: bool) -> u8 {
     8
 }
 
+pub fn ld_r8_d8(cpu: &mut Cpu, destination: RegisterName) -> u8 {
+    let value = cpu.mmu.read(cpu.registers.pc_next());
+
+    cpu.set_r8_value(destination, value);
+
+    if destination == RegisterName::HL {
+        8
+    } else {
+        4
+    }
+}
+
 pub fn ld_r8_r8(cpu: &mut Cpu, destination: RegisterName, source: RegisterName) -> u8 {
-    let value = cpu.registers.read_8_bit_reg(source);
+    let value = cpu.r8_value(source);
 
-    cpu.registers.write_8_bit_reg(destination, value);
+    cpu.set_r8_value(destination, value);
 
-    4
+    if (destination == RegisterName::HL) || (source == RegisterName::HL) {
+        8
+    } else {
+        4
+    }
 }
 
 pub fn ld_r8_r16_mem(cpu: &mut Cpu, destination: RegisterName, source: RegisterName) -> u8 {

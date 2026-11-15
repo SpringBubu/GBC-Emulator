@@ -343,6 +343,12 @@ impl Register {
     pub fn inc_pc(&mut self, value: u16) {
         self.pc = self.pc.wrapping_add(value);
     }
+    pub fn pc_next(&mut self) -> u16 {
+        let pc = self.pc();
+        self.inc_pc(1);
+
+        pc
+    }
 }
 
 #[cfg(test)]
