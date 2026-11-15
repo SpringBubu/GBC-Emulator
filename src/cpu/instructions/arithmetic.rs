@@ -1,6 +1,6 @@
 use crate::cpu::{
     Cpu,
-    registers::{FlagName, RegisterName},
+    registers::{self, FlagName, RegisterName},
 };
 
 pub fn inc_r16(cpu: &mut Cpu, register: RegisterName) -> u8 {
@@ -76,6 +76,21 @@ pub fn ccf(cpu: &mut Cpu) -> u8 {
     cpu.registers.flags_set_c(!carry);
 
     4
+}
+
+pub fn add_hl_r16(cpu: &mut Cpu, register: RegisterName) -> u8 {
+    let hl = cpu.registers.hl();
+    let addend = cpu.registers.read_16_bit_reg(register);
+    let (value, carry) = hl.overflowing_add(addend);
+    let half_carry = ((hl & 0x0FFF) + (addend & 0x0FFF)) > 0x0FFF;
+
+    cpu.registers.set_hl(value);
+
+    cpu.registers.flags_set_n(false);
+    cpu.registers.flags_set_h(half_carry);
+    cpu.registers.flags_set_c(carry);
+
+    8
 }
 
 pub fn add_a_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {

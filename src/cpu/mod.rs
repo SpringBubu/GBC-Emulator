@@ -23,32 +23,42 @@ impl Cpu {
         let src_reg = Self::map_b3_to_r8(instruction & 0x07);
         let dest_reg = Self::map_b3_to_r8((instruction & 0x38) >> 3);
 
+        // TODO: fold the vertical groups of 4
         match instruction {
+            // 0x00..=0x3F => {}
             0x00 => 1,
             0x01 => load::ld_r16_d16(self, RegisterName::BC),
             0x02 => load::ld_r16_mem_r8(self, RegisterName::BC, RegisterName::A),
             0x03 => arithmetic::inc_r16(self, RegisterName::BC),
             0x04 => arithmetic::inc_r8(self, RegisterName::B),
             0x05 => arithmetic::dec_r8(self, RegisterName::B),
+            0x07 => bit::rlca(self),
+            0x09 => arithmetic::add_hl_r16(self, RegisterName::BC),
             0x0A => load::ld_r8_r16_mem(self, RegisterName::A, RegisterName::BC),
             0x0B => arithmetic::dec_r16(self, RegisterName::BC),
             0x0C => arithmetic::inc_r8(self, RegisterName::C),
             0x0D => arithmetic::dec_r8(self, RegisterName::C),
+            0x0F => bit::rrca(self),
             0x11 => load::ld_r16_d16(self, RegisterName::DE),
             0x12 => load::ld_r16_mem_r8(self, RegisterName::DE, RegisterName::A),
             0x13 => arithmetic::inc_r16(self, RegisterName::DE),
             0x14 => arithmetic::inc_r8(self, RegisterName::D),
             0x15 => arithmetic::dec_r8(self, RegisterName::D),
+            0x17 => bit::rla(self),
+            0x19 => arithmetic::add_hl_r16(self, RegisterName::DE),
             0x1A => load::ld_r8_r16_mem(self, RegisterName::A, RegisterName::DE),
             0x1B => arithmetic::dec_r16(self, RegisterName::DE),
             0x1C => arithmetic::inc_r8(self, RegisterName::E),
             0x1D => arithmetic::dec_r8(self, RegisterName::E),
+            0x1F => bit::rra(self),
             0x20 => control::jr_cond_r8(self, control::JumpCondition::NZ),
             0x21 => load::ld_r16_d16(self, RegisterName::HL),
             0x22 => load::ld_hl_pm_mem_a(self, true),
             0x23 => arithmetic::inc_r16(self, RegisterName::HL),
             0x24 => arithmetic::inc_r8(self, RegisterName::H),
             0x25 => arithmetic::dec_r8(self, RegisterName::H),
+            0x29 => arithmetic::add_hl_r16(self, RegisterName::HL),
+            0x2A => load::ld_a_hl_pm_mem(self, true),
             0x2B => arithmetic::dec_r16(self, RegisterName::HL),
             0x2C => arithmetic::inc_r8(self, RegisterName::L),
             0x2D => arithmetic::dec_r8(self, RegisterName::L),
@@ -59,6 +69,8 @@ impl Cpu {
             0x34 => arithmetic::inc_r8(self, RegisterName::HL),
             0x35 => arithmetic::dec_r8(self, RegisterName::HL),
             0x37 => arithmetic::scf(self),
+            0x39 => arithmetic::add_hl_r16(self, RegisterName::SP),
+            0x3A => load::ld_a_hl_pm_mem(self, false),
             0x3B => arithmetic::dec_r16(self, RegisterName::SP),
             0x3C => arithmetic::inc_r8(self, RegisterName::A),
             0x3D => arithmetic::dec_r8(self, RegisterName::A),
@@ -83,12 +95,21 @@ impl Cpu {
             0xA8..=0xAF => arithmetic::xor_a_r8(self, src_reg),
             0xB0..=0xB7 => arithmetic::or_a_r8(self, src_reg),
             0xB8..=0xBF => arithmetic::cp_a_r8(self, src_reg),
+            // 0xC0..=0xFF => {}
+            0xC1 => stack::pop_r16(self, RegisterName::BC),
+            0xC5 => stack::push_r16(self, RegisterName::BC),
             0xCB => {
                 // TODO: make this more elegant
                 let pc = self.registers.pc() as usize;
                 self.registers.inc_pc(1);
                 self.prefix_step(self.dummy_memory[pc])
             }
+            0xD1 => stack::pop_r16(self, RegisterName::DE),
+            0xD5 => stack::push_r16(self, RegisterName::DE),
+            0xE1 => stack::pop_r16(self, RegisterName::HL),
+            0xE5 => stack::push_r16(self, RegisterName::HL),
+            0xF1 => stack::pop_r16(self, RegisterName::AF),
+            0xF5 => stack::push_r16(self, RegisterName::AF),
             0xFB => 0, // TODO: learn how interrupts work & implemented accordingly
             _ => panic!("Instruction not implemented: {:02X}", instruction),
         }

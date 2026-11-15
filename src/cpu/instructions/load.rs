@@ -30,7 +30,7 @@ pub fn ld_hl_pm_mem_a(cpu: &mut Cpu, plus: bool) -> u8 {
         address.wrapping_sub(1)
     };
 
-    cpu.registers.write_16_bit_reg(RegisterName::HL, new_hl);
+    cpu.registers.set_hl(new_hl);
 
     8
 }
@@ -48,6 +48,23 @@ pub fn ld_r8_r16_mem(cpu: &mut Cpu, destination: RegisterName, source: RegisterN
     let value = cpu.mmu.read(address);
 
     cpu.registers.write_8_bit_reg(destination, value);
+
+    8
+}
+
+pub fn ld_a_hl_pm_mem(cpu: &mut Cpu, plus: bool) -> u8 {
+    let address = cpu.registers.hl();
+    let value = cpu.mmu.read(address);
+
+    cpu.registers.set_a(value);
+
+    let new_hl = if plus {
+        address.wrapping_add(1)
+    } else {
+        address.wrapping_sub(1)
+    };
+
+    cpu.registers.set_hl(new_hl);
 
     8
 }

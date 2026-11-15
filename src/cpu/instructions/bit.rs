@@ -1,5 +1,17 @@
 use crate::cpu::{Cpu, registers::FlagName, registers::RegisterName};
 
+pub fn rlca(cpu: &mut Cpu) -> u8 {
+    let a = cpu.registers.a();
+    let msb = a & 0x80;
+    let value = (a << 1) | (msb >> 7);
+
+    cpu.registers.set_a(value);
+
+    cpu.registers.set_exclusive_flag(FlagName::C, msb != 0);
+
+    4
+}
+
 pub fn rlc_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
     let reg = cpu.r8_value(register);
     let msb = reg & 0x80;
@@ -13,6 +25,47 @@ pub fn rlc_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
     cpu.registers.flags_set_c(msb != 0);
 
     if register == RegisterName::HL { 16 } else { 8 }
+}
+
+pub fn rla(cpu: &mut Cpu) -> u8 {
+    let a = cpu.registers.a();
+    let carry_bit = cpu.registers.flags_c() as u8;
+    let value = (a << 1) | carry_bit;
+    let carry = (a & 0x80) != 0;
+
+    cpu.registers.set_a(value);
+
+    cpu.registers.set_exclusive_flag(FlagName::C, carry);
+
+    4
+}
+
+pub fn rl_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
+    let reg = cpu.r8_value(register);
+    let carry_bit = cpu.registers.flags_c() as u8;
+    let value = (reg << 1) | carry_bit;
+    let carry = (reg & 0x80) != 0;
+
+    cpu.set_r8_value(register, value);
+
+    cpu.registers.flags_set_z(value == 0);
+    cpu.registers.flags_set_n(false);
+    cpu.registers.flags_set_h(false);
+    cpu.registers.flags_set_c(carry);
+
+    if register == RegisterName::HL { 16 } else { 8 }
+}
+
+pub fn rrca(cpu: &mut Cpu) -> u8 {
+    let a = cpu.registers.a();
+    let lsb = a & 0x01;
+    let value = (lsb << 7) | (a >> 1);
+
+    cpu.registers.set_a(value);
+
+    cpu.registers.set_exclusive_flag(FlagName::C, lsb != 0);
+
+    4
 }
 
 pub fn rrc_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
@@ -30,20 +83,17 @@ pub fn rrc_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
     if register == RegisterName::HL { 16 } else { 8 }
 }
 
-pub fn rl_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
-    let reg = cpu.r8_value(register);
+pub fn rra(cpu: &mut Cpu) -> u8 {
+    let a = cpu.registers.a();
     let carry_bit = cpu.registers.flags_c() as u8;
-    let value = (reg << 1) | carry_bit;
-    let carry = (reg & 0x80) != 0;
+    let value = (carry_bit << 7) | (a >> 1);
+    let carry = (a & 0x01) != 0;
 
-    cpu.set_r8_value(register, value);
+    cpu.registers.set_a(value);
 
-    cpu.registers.flags_set_z(value == 0);
-    cpu.registers.flags_set_n(false);
-    cpu.registers.flags_set_h(false);
-    cpu.registers.flags_set_c(carry);
+    cpu.registers.set_exclusive_flag(FlagName::C, carry);
 
-    if register == RegisterName::HL { 16 } else { 8 }
+    4
 }
 
 pub fn rr_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
