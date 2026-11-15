@@ -84,9 +84,7 @@ impl Cpu {
     }
 
     fn prefix_step(&mut self, instruction: u8) -> u8 {
-        // evil bit pattern level hacking
         let target = Self::map_b3_to_r8(instruction & 0x07);
-        let bit_pos = (instruction & 0x38) >> 3;
 
         match instruction {
             0x00..=0x07 => bit::rlc_r8(self, target),
@@ -97,9 +95,9 @@ impl Cpu {
             0x28..=0x2F => bit::sra_r8(self, target),
             0x30..=0x37 => bit::swap_r8(self, target),
             0x38..=0x3F => bit::srl_r8(self, target),
-            0x40..=0x7F => bit::bit_p_r8(self, bit_pos, target),
-            0x80..=0xBF => bit::res_p_r8(self, bit_pos, target),
-            0xC0..=0xFF => bit::set_p_r8(self, bit_pos, target),
+            0x40..=0x7F => bit::bit_p_r8(self, (instruction & 0x38) >> 3, target),
+            0x80..=0xBF => bit::res_p_r8(self, (instruction & 0x38) >> 3, target),
+            0xC0..=0xFF => bit::set_p_r8(self, (instruction & 0x38) >> 3, target),
         }
     }
 
