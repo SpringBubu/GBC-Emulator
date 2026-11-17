@@ -54,6 +54,7 @@ impl Cpu {
                 control::jr_cond_s8(self, condition)
             }
             0x22 => load::ld_hl_pm_mem_a(self, true),
+            0x27 => arithmetic::daa(self),
             0x2A => load::ld_a_hl_pm_mem(self, true),
             0x2F => arithmetic::cpl(self),
             0x32 => load::ld_hl_pm_mem_a(self, false),
@@ -84,12 +85,20 @@ impl Cpu {
             }
             0xC3 => control::jp_a16(self),
             0xC5 | 0xD5 | 0xE5 | 0xF5 => stack::push_r16(self, target_r16),
+            0xC6 => arithmetic::add_a_d8(self),
             0xCB => {
                 let instruction = self.fetch_instruction();
                 self.prefix_step(instruction)
             }
+            0xCE => arithmetic::adc_a_d8(self),
+            0xD6 => arithmetic::sub_a_d8(self),
+            0xDE => arithmetic::sbc_a_d8(self),
+            0xE6 => arithmetic::and_a_d8(self),
             0xE9 => control::jp_hl(self),
+            0xEE => arithmetic::xor_a_d8(self),
+            0xF9 => arithmetic::or_a_d8(self),
             0xFB => 0, // TODO: learn how interrupts work & implemented accordingly
+            0xFE => arithmetic::cp_a_d8(self),
             _ => panic!("Instruction not implemented: {:02X}", instruction),
         }
     }
@@ -166,7 +175,7 @@ impl Cpu {
             1 => JumpCondition::Z,
             2 => JumpCondition::NC,
             3 => JumpCondition::C,
-            _ => panic!("Invalid traget"),
+            _ => panic!("Invalid target"),
         }
     }
 

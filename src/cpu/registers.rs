@@ -52,12 +52,12 @@ pub enum FlagName {
     C,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Flags {
-    zero: bool,
-    subtraction: bool,
-    half_carry: bool,
-    carry: bool,
+    pub zero: bool,
+    pub subtraction: bool,
+    pub half_carry: bool,
+    pub carry: bool,
 }
 
 const ZERO_FLAG_MASK: u8 = 0b_1000_0000;
@@ -99,7 +99,7 @@ impl std::convert::From<u8> for Flags {
 
 pub struct Register {
     a: u8,
-    pub f: Flags,
+    f: Flags,
     b: u8,
     c: u8,
     d: u8,
@@ -223,6 +223,9 @@ impl Register {
         self.l = value as u8;
     }
 
+    // TODO: (?) move this out of registers into Flags
+    // which slighty improves syntax:
+    // cpu.registers.flags_z() => cpu.registers.flags.z()
     pub fn flags_z(&self) -> bool {
         self.f.zero
     }
@@ -251,6 +254,13 @@ impl Register {
         self.f.carry = state;
     }
 
+    // TODO: in case of above refactor: this needs to be a reference, not a copy
+    pub fn flags(&self) -> Flags {
+        self.f
+    }
+    pub fn set_flags(&mut self, flags: u8) {
+        self.f = flags.into();
+    }
     pub fn set_exclusive_flag(&mut self, name: FlagName, state: bool) {
         use self::FlagName::*;
 
@@ -262,9 +272,6 @@ impl Register {
             H => self.flags_set_h(state),
             C => self.flags_set_z(state),
         }
-    }
-    pub fn set_flags(&mut self, flags: u8) {
-        self.f = flags.into();
     }
 
     pub fn read_16_bit_reg(&self, register: RegisterName) -> u16 {
