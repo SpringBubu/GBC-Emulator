@@ -1,6 +1,6 @@
 use crate::cpu::{Cpu, registers::RegisterName};
 
-pub fn ld_r16_d16(cpu: &mut Cpu, register: RegisterName) -> u8 {
+pub fn ld_r16_u16(cpu: &mut Cpu, register: RegisterName) -> u8 {
     let address = cpu.registers.pc();
     let value = cpu.fetch_little_endian_d16(address);
     cpu.registers.inc_pc(2);
@@ -36,7 +36,7 @@ pub fn ld_hl_pm_mem_a(cpu: &mut Cpu, plus: bool) -> u8 {
     8
 }
 
-pub fn ld_r8_d8(cpu: &mut Cpu, destination: RegisterName) -> u8 {
+pub fn ld_r8_u8(cpu: &mut Cpu, destination: RegisterName) -> u8 {
     let value = cpu.mmu.read(cpu.registers.pc_next());
 
     cpu.set_r8_value(destination, value);

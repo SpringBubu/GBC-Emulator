@@ -28,7 +28,7 @@ impl Cpu {
 
         match instruction {
             0x00 => 1,
-            0x01 | 0x11 | 0x21 | 0x31 => load::ld_r16_d16(self, target_r16),
+            0x01 | 0x11 | 0x21 | 0x31 => load::ld_r16_u16(self, target_r16),
             0x02 | 0x12 => load::ld_r16_mem_r8(self, target_r16, RegisterName::A),
             0x03 | 0x13 | 0x23 | 0x33 => arithmetic::inc_r16(self, target_r16),
             0x04 | 0x14 | 0x24 | 0x34 | 0x0C | 0x1C | 0x2C | 0x3C => {
@@ -39,7 +39,7 @@ impl Cpu {
             }
             0x06 | 0x16 | 0x26 | 0x36 | 0x0E | 0x1E | 0x2E | 0x3E => {
                 let dest_r8 = Self::map_b3_to_r8((instruction & 0x38) >> 3);
-                load::ld_r8_d8(self, dest_r8)
+                load::ld_r8_u8(self, dest_r8)
             }
             0x07 => bit::rlca(self),
             0x09 | 0x19 | 0x29 | 0x39 => arithmetic::add_hl_r16(self, target_r16),
@@ -47,8 +47,12 @@ impl Cpu {
             0x0B | 0x1B | 0x2B | 0x3B => arithmetic::dec_r16(self, target_r16),
             0x0F => bit::rrca(self),
             0x17 => bit::rla(self),
+            0x18 => control::jr_s8(self),
             0x1F => bit::rra(self),
-            0x20 => control::jr_cond_r8(self, control::JumpCondition::NZ),
+            0x20 | 0x28 | 0x30 | 0x38 => {
+                let condition = Self::map_b2_to_jc((instruction & 0x18) >> 3);
+                control::jr_cond_s8(self, condition)
+            }
             0x22 => load::ld_hl_pm_mem_a(self, true),
             0x2A => load::ld_a_hl_pm_mem(self, true),
             0x2F => arithmetic::cpl(self),
@@ -74,11 +78,17 @@ impl Cpu {
             0xB0..=0xB7 => arithmetic::or_a_r8(self, src_r8),
             0xB8..=0xBF => arithmetic::cp_a_r8(self, src_r8),
             0xC1 | 0xD1 | 0xE1 | 0xF1 => stack::pop_r16(self, target_r16),
+            0xC2 | 0xCA | 0xD2 | 0xDA => {
+                let condition = Self::map_b2_to_jc((instruction & 0x18) >> 3);
+                control::jp_cond_a16(self, condition)
+            }
+            0xC3 => control::jp_a16(self),
             0xC5 | 0xD5 | 0xE5 | 0xF5 => stack::push_r16(self, target_r16),
             0xCB => {
                 let instruction = self.fetch_instruction();
                 self.prefix_step(instruction)
             }
+            0xE9 => control::jp_hl(self),
             0xFB => 0, // TODO: learn how interrupts work & implemented accordingly
             _ => panic!("Instruction not implemented: {:02X}", instruction),
         }
@@ -134,6 +144,7 @@ impl Cpu {
         self.mmu.write(address.wrapping_add(1), high_byte);
     }
 
+    // TODO: not sure I am happy with these map functions
     fn map_b3_to_r8(masked_instr: u8) -> RegisterName {
         match masked_instr {
             0 => RegisterName::B,
@@ -145,6 +156,17 @@ impl Cpu {
             6 => RegisterName::HL,
             7 => RegisterName::A,
             _ => panic!("Invalid target"),
+        }
+    }
+
+    fn map_b2_to_jc(masked_instr: u8) -> control::JumpCondition {
+        use control::*;
+        match masked_instr {
+            0 => JumpCondition::NZ,
+            1 => JumpCondition::Z,
+            2 => JumpCondition::NC,
+            3 => JumpCondition::C,
+            _ => panic!("Invalid traget"),
         }
     }
 

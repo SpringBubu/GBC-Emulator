@@ -1,6 +1,6 @@
 use crate::cpu::{
     Cpu,
-    registers::{self, FlagName, RegisterName},
+    registers::{FlagName, RegisterName},
 };
 
 pub fn inc_r16(cpu: &mut Cpu, register: RegisterName) -> u8 {

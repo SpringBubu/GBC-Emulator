@@ -1,7 +1,4 @@
-use crate::cpu::{
-    Cpu,
-    registers::{self, RegisterName},
-};
+use crate::cpu::{Cpu, registers::RegisterName};
 
 pub fn pop_r16(cpu: &mut Cpu, register: RegisterName) -> u8 {
     let address = cpu.registers.sp();
