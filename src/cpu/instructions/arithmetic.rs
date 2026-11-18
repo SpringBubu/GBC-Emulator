@@ -122,6 +122,24 @@ pub fn add_hl_r16(cpu: &mut Cpu, register: RegisterName) -> u8 {
     8
 }
 
+pub fn add_sp_i8(cpu: &mut Cpu) -> u8 {
+    let hl = cpu.registers.hl();
+    let addend = cpu.mmu.read(cpu.registers.pc_next()) as i8;
+    let (value, carry) = hl.overflowing_add_signed(addend.into());
+
+    // TODO: not sure if this is correct
+    let half_carry = ((hl & 0x0FFF) + ((addend as u16) & 0x0FFF)) > 0x0FFF;
+
+    cpu.registers.set_sp(value);
+
+    cpu.registers.flags_set_z(false);
+    cpu.registers.flags_set_n(false);
+    cpu.registers.flags_set_h(half_carry);
+    cpu.registers.flags_set_c(carry);
+
+    16
+}
+
 fn add_a(cpu: &mut Cpu, addend: u8) {
     let a = cpu.registers.a();
     let (value, carry) = a.overflowing_add(addend);
@@ -143,7 +161,7 @@ pub fn add_a_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
     if register == RegisterName::HL { 8 } else { 4 }
 }
 
-pub fn add_a_d8(cpu: &mut Cpu) -> u8 {
+pub fn add_a_u8(cpu: &mut Cpu) -> u8 {
     let addend = cpu.mmu.read(cpu.registers.pc_next());
 
     add_a(cpu, addend);
@@ -174,7 +192,7 @@ pub fn adc_a_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
     if register == RegisterName::HL { 8 } else { 4 }
 }
 
-pub fn adc_a_d8(cpu: &mut Cpu) -> u8 {
+pub fn adc_a_u8(cpu: &mut Cpu) -> u8 {
     let addend = cpu.mmu.read(cpu.registers.pc_next());
 
     adc_a(cpu, addend);
@@ -203,7 +221,7 @@ pub fn sub_a_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
     if register == RegisterName::HL { 8 } else { 4 }
 }
 
-pub fn sub_a_d8(cpu: &mut Cpu) -> u8 {
+pub fn sub_a_u8(cpu: &mut Cpu) -> u8 {
     let subtrahend = cpu.mmu.read(cpu.registers.pc_next());
 
     sub_a(cpu, subtrahend);
@@ -234,7 +252,7 @@ pub fn sbc_a_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
     if register == RegisterName::HL { 8 } else { 4 }
 }
 
-pub fn sbc_a_d8(cpu: &mut Cpu) -> u8 {
+pub fn sbc_a_u8(cpu: &mut Cpu) -> u8 {
     let subtrahend = cpu.mmu.read(cpu.registers.pc_next());
 
     sbc_a(cpu, subtrahend);
@@ -262,7 +280,7 @@ pub fn and_a_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
     if register == RegisterName::HL { 8 } else { 4 }
 }
 
-pub fn and_a_d8(cpu: &mut Cpu) -> u8 {
+pub fn and_a_u8(cpu: &mut Cpu) -> u8 {
     let operand = cpu.mmu.read(cpu.registers.pc_next());
 
     and_a(cpu, operand);
@@ -287,7 +305,7 @@ pub fn xor_a_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
     if register == RegisterName::HL { 8 } else { 4 }
 }
 
-pub fn xor_a_d8(cpu: &mut Cpu) -> u8 {
+pub fn xor_a_u8(cpu: &mut Cpu) -> u8 {
     let operand = cpu.mmu.read(cpu.registers.pc_next());
 
     xor_a(cpu, operand);
@@ -312,7 +330,7 @@ pub fn or_a_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
     if register == RegisterName::HL { 8 } else { 4 }
 }
 
-pub fn or_a_d8(cpu: &mut Cpu) -> u8 {
+pub fn or_a_u8(cpu: &mut Cpu) -> u8 {
     let operand = cpu.mmu.read(cpu.registers.pc_next());
 
     or_a(cpu, operand);
@@ -339,7 +357,7 @@ pub fn cp_a_r8(cpu: &mut Cpu, register: RegisterName) -> u8 {
     if register == RegisterName::HL { 8 } else { 4 }
 }
 
-pub fn cp_a_d8(cpu: &mut Cpu) -> u8 {
+pub fn cp_a_u8(cpu: &mut Cpu) -> u8 {
     let operand = cpu.mmu.read(cpu.registers.pc_next());
 
     cp_a(cpu, operand);

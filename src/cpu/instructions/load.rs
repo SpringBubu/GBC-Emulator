@@ -2,7 +2,7 @@ use crate::cpu::{Cpu, registers::RegisterName};
 
 pub fn ld_r16_u16(cpu: &mut Cpu, register: RegisterName) -> u8 {
     let address = cpu.registers.pc();
-    let value = cpu.fetch_little_endian_d16(address);
+    let value = cpu.fetch_little_endian_u16(address);
     cpu.registers.inc_pc(2);
 
     cpu.registers.write_16_bit_reg(register, value);

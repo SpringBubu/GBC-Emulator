@@ -27,7 +27,7 @@ impl Cpu {
         let target_r16 = RegisterName::AF; // = Self::map_b2_to_r16((instruction & 0x30) >> 4);
 
         match instruction {
-            0x00 => 1,
+            0x00 => misc::nop(),
             0x01 | 0x11 | 0x21 | 0x31 => load::ld_r16_u16(self, target_r16),
             0x02 | 0x12 => load::ld_r16_mem_r8(self, target_r16, RegisterName::A),
             0x03 | 0x13 | 0x23 | 0x33 => arithmetic::inc_r16(self, target_r16),
@@ -47,11 +47,11 @@ impl Cpu {
             0x0B | 0x1B | 0x2B | 0x3B => arithmetic::dec_r16(self, target_r16),
             0x0F => bit::rrca(self),
             0x17 => bit::rla(self),
-            0x18 => control::jr_s8(self),
+            0x18 => control::jr_i8(self),
             0x1F => bit::rra(self),
             0x20 | 0x28 | 0x30 | 0x38 => {
                 let condition = Self::map_b2_to_jc((instruction & 0x18) >> 3);
-                control::jr_cond_s8(self, condition)
+                control::jr_cond_i8(self, condition)
             }
             0x22 => load::ld_hl_pm_mem_a(self, true),
             0x27 => arithmetic::daa(self),
@@ -78,6 +78,10 @@ impl Cpu {
             0xA8..=0xAF => arithmetic::xor_a_r8(self, src_r8),
             0xB0..=0xB7 => arithmetic::or_a_r8(self, src_r8),
             0xB8..=0xBF => arithmetic::cp_a_r8(self, src_r8),
+            0xC0 | 0xC8 | 0xD0 | 0xD8 => {
+                let condition = Self::map_b2_to_jc((instruction & 0x18) >> 3);
+                control::ret_cond(self, condition)
+            }
             0xC1 | 0xD1 | 0xE1 | 0xF1 => stack::pop_r16(self, target_r16),
             0xC2 | 0xCA | 0xD2 | 0xDA => {
                 let condition = Self::map_b2_to_jc((instruction & 0x18) >> 3);
@@ -85,20 +89,22 @@ impl Cpu {
             }
             0xC3 => control::jp_a16(self),
             0xC5 | 0xD5 | 0xE5 | 0xF5 => stack::push_r16(self, target_r16),
-            0xC6 => arithmetic::add_a_d8(self),
+            0xC6 => arithmetic::add_a_u8(self),
+            0xC9 => control::ret(self),
             0xCB => {
                 let instruction = self.fetch_instruction();
                 self.prefix_step(instruction)
             }
-            0xCE => arithmetic::adc_a_d8(self),
-            0xD6 => arithmetic::sub_a_d8(self),
-            0xDE => arithmetic::sbc_a_d8(self),
-            0xE6 => arithmetic::and_a_d8(self),
+            0xCE => arithmetic::adc_a_u8(self),
+            0xD6 => arithmetic::sub_a_u8(self),
+            0xDE => arithmetic::sbc_a_u8(self),
+            0xE6 => arithmetic::and_a_u8(self),
+            0xE8 => arithmetic::add_sp_i8(self),
             0xE9 => control::jp_hl(self),
-            0xEE => arithmetic::xor_a_d8(self),
-            0xF9 => arithmetic::or_a_d8(self),
+            0xEE => arithmetic::xor_a_u8(self),
+            0xF9 => arithmetic::or_a_u8(self),
             0xFB => 0, // TODO: learn how interrupts work & implemented accordingly
-            0xFE => arithmetic::cp_a_d8(self),
+            0xFE => arithmetic::cp_a_u8(self),
             _ => panic!("Instruction not implemented: {:02X}", instruction),
         }
     }
@@ -137,7 +143,7 @@ impl Cpu {
     }
 
     // TODO: refactor(?)
-    fn fetch_little_endian_d16(&self, address: u16) -> u16 {
+    fn fetch_little_endian_u16(&self, address: u16) -> u16 {
         let low_byte = self.mmu.read(address) as u16;
         let high_byte = self.mmu.read(address.wrapping_add(1)) as u16;
 
@@ -145,7 +151,7 @@ impl Cpu {
     }
 
     // TODO: refactor(?)
-    fn store_little_endian_16(&mut self, address: u16, value: u16) {
+    fn store_little_endian_u16(&mut self, address: u16, value: u16) {
         let high_byte = (value >> 8) as u8;
         let low_byte = value as u8;
 
